@@ -1,101 +1,630 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Battle Sandbox</title>
-  <link rel="stylesheet" href="css/style.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Battle Sandbox!</title>
+  <style>
+    :root{--bg:#0e1013;--panel:#161a20;--accent:#6ee7ff;--accent2:#ffc266;--text:#e9eef5;--muted:#92a3b5;--danger:#ff6767;}
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,#0b0d10,#11151a);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;overflow:hidden;}
+    #arenaWrap{position:absolute;inset:0;display:grid;place-items:center;}
+    #arena{background:#0b0d10;border:1px solid #2a2f39;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+    .hud{position:absolute;inset:12px;pointer-events:none}
+    .panel{position:absolute;top:24px;left:24px;width:360px;max-height:72vh;background:var(--panel);border:1px solid #2b313a;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;pointer-events:auto;}
+    .panel.small{width:300px}
+    .panel .title{cursor:grab;background:linear-gradient(180deg,#1c222a,#171c22);padding:10px 12px;border-bottom:1px solid #2b313a;display:flex;gap:10px;align-items:center}
+    .panel .title:active{cursor:grabbing}
+    .panel .title .dot{width:10px;height:10px;border-radius:10px;background:var(--accent)}
+    .panel .body{padding:10px;overflow:auto;max-height:calc(72vh - 44px)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .row{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .row input[type="number"]{width:90px}
+    .row label{min-width:150px;color:var(--muted)}
+    .row .toggle{display:flex;gap:6px;align-items:center}
+    .btn{appearance:none;border:1px solid #2b313a;background:#1a2028;color:var(--text);padding:8px 10px;border-radius:8px;cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .btn.accent{border-color:#2b424b;background:#10222a;color:#bff2ff}
+    .btn.warn{border-color:#3a2b2b;background:#2a1515;color:#ffd3d3}
+    .btn.ghost{background:transparent;border-color:#2b313a}
+    .bar{height:8px;border-radius:6px;background:#212832;overflow:hidden}
+    .bar>i{display:block;height:100%;background:linear-gradient(90deg,#74f,#4af,#3ff);width:50%}
+    textarea.code{width:100%;min-height:240px;background:#0d1015;color:#d5e0ee;border:1px solid #2b313a;border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .flex{display:flex;gap:8px;align-items:center}
+    .stack{display:flex;flex-direction:column;gap:8px}
+    .sep{height:1px;background:#2b313a;margin:8px 0}
+    canvas.pixel{image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid #313a46;border-radius:6px;background:#0b0d10}
+    .palette{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .sw{width:18px;height:18px;border-radius:4px;border:1px solid #2b313a;cursor:pointer}
+    .kbd{font-family:ui-monospace,Consolas,monospace;background:#12161c;border:1px solid #2b313a;border-radius:6px;padding:0 6px;margin-left:4px;color:#b8c6d9}
+    #log{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#b8c6d9}
+    .pill{display:inline-block;padding:2px 6px;border-radius:999px;background:#151b22;border:1px solid #2b313a;color:#a8b3c4}
+    .footer{font-size:12px;color:#8ea1b6}
+    a{color:#aee3ff}
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <h1>⚔️ Battle Sandbox</h1>
-    <div class="actions">
-      <button id="exportAll">Export Both</button>
-      <input type="file" id="importAll" accept=".json" style="display:none"/>
-      <button id="importAllBtn">Import</button>
-      <button id="playBtn">▶ Play</button>
-      <button id="pauseBtn" disabled>⏸ Pause</button>
-      <button id="resetBtn">↺ Reset</button>
+  <div id="arenaWrap">
+    <canvas id="arena" width="960" height="540"></canvas>
+    <div class="hud"></div>
+  </div>
+
+  <!-- Character A Panel -->
+  <div class="panel" id="panelA" style="left:16px;top:16px">
+    <div class="title"><span class="dot"></span><strong>Character A</strong><span class="pill">Player A</span></div>
+    <div class="body">
+      <div class="grid">
+        <div class="stack">
+          <div class="row"><label>Hit points</label><input id="A_hp" type="number" min="1" max="9999" value="200"></div>
+          <div class="row"><label>Physical strength</label><input id="A_pAtk" type="number" min="0" max="500" value="30"></div>
+          <div class="row"><label>Physical resistance</label><input id="A_pRes" type="number" min="0" max="90" value="15"></div>
+          <div class="row"><label>Magical power</label><input id="A_mAtk" type="number" min="0" max="500" value="10"></div>
+          <div class="row"><label>Magical resistance</label><input id="A_mRes" type="number" min="0" max="90" value="10"></div>
+          <div class="row"><label>Movement speed</label><input id="A_move" type="number" min="10" max="400" value="110"></div>
+          <div class="row"><label>Attacking speed</label><input id="A_as" type="number" min="0" max="300" value="0"></div>
+          <div class="row"><label>Can fly</label>
+            <span class="toggle">
+              <input id="A_fly" type="checkbox">
+              <small class="muted">Yes</small>
+            </span>
+          </div>
+        </div>
+        <div>
+          <canvas id="A_px" class="pixel" width="16" height="16" style="width:128px;height:128px"></canvas>
+          <div class="row"><input id="A_color" type="color" value="#ffffff"><button class="btn ghost" id="A_clear">Clear</button></div>
+          <div class="palette" id="A_palette"></div>
+          <small class="footer">16×16 pixel editor. Click to paint. <span class="kbd">Alt</span> pick color, <span class="kbd">Right‑click</span> erase.</small>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <main>
-    <canvas id="arena" width="980" height="540" aria-label="arena"></canvas>
-
-    <!-- Fighter Panels -->
-    <section class="panel" id="fighterA" style="left:16px;top:92px;">
-      <div class="panel-handle">Fighter A</div>
-      <div class="panel-body">
-        <div class="row">
-          <div class="col">
-            <h3>Appearance (16×16)</h3>
-            <div class="sprite-toolbar">
-              <label>Color <input type="color" id="colorA" value="#3aa3ff"/></label>
-              <button class="small" data-tool="eyedropA">Eyedropper</button>
-              <button class="small" data-tool="eraseA">Eraser</button>
-              <button class="small" id="clearA">Clear</button>
-              <button class="small" id="exportA">Export A</button>
-              <input type="file" id="importA" accept=".json" style="display:none"/>
-              <button class="small" id="importABtn">Import A</button>
-            </div>
-            <div class="sprite-grid" id="gridA" aria-label="sprite editor A"></div>
-          </div>
-
-          <div class="col">
-            <h3>Stats</h3>
-            <div class="stats" id="statsA"></div>
-            <label class="checkbox"><input type="checkbox" id="flyA"> Can Fly</label>
-            <h3>Abilities</h3>
-            <textarea id="abilitiesA" spellcheck="false" class="codearea"></textarea>
-            <div class="ability-actions">
-              <button class="small" id="tplA">Insert Template</button>
-              <button class="small" id="validateA">Validate & Load</button>
-            </div>
-            <div class="status" id="statusA"></div>
+  <!-- Character B Panel -->
+  <div class="panel" id="panelB" style="left:400px;top:16px">
+    <div class="title"><span class="dot" style="background:var(--accent2)"></span><strong>Character B</strong><span class="pill">Player B</span></div>
+    <div class="body">
+      <div class="grid">
+        <div class="stack">
+          <div class="row"><label>Hit points</label><input id="B_hp" type="number" min="1" max="9999" value="220"></div>
+          <div class="row"><label>Physical strength</label><input id="B_pAtk" type="number" min="0" max="500" value="15"></div>
+          <div class="row"><label>Physical resistance</label><input id="B_pRes" type="number" min="0" max="90" value="10"></div>
+          <div class="row"><label>Magical power</label><input id="B_mAtk" type="number" min="0" max="500" value="35"></div>
+          <div class="row"><label>Magical resistance</label><input id="B_mRes" type="number" min="0" max="90" value="25"></div>
+          <div class="row"><label>Movement speed</label><input id="B_move" type="number" min="10" max="400" value="100"></div>
+          <div class="row"><label>Attacking speed</label><input id="B_as" type="number" min="0" max="300" value="20"></div>
+          <div class="row"><label>Can fly</label>
+            <span class="toggle">
+              <input id="B_fly" type="checkbox" checked>
+              <small class="muted">Yes</small>
+            </span>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="panel" id="fighterB" style="left:16px;top:332px;">
-      <div class="panel-handle">Fighter B</div>
-      <div class="panel-body">
-        <div class="row">
-          <div class="col">
-            <h3>Appearance (16×16)</h3>
-            <div class="sprite-toolbar">
-              <label>Color <input type="color" id="colorB" value="#ff3a7a"/></label>
-              <button class="small" data-tool="eyedropB">Eyedropper</button>
-              <button class="small" data-tool="eraseB">Eraser</button>
-              <button class="small" id="clearB">Clear</button>
-              <button class="small" id="exportB">Export B</button>
-              <input type="file" id="importB" accept=".json" style="display:none"/>
-              <button class="small" id="importBBtn">Import B</button>
-            </div>
-            <div class="sprite-grid" id="gridB" aria-label="sprite editor B"></div>
-          </div>
-
-          <div class="col">
-            <h3>Stats</h3>
-            <div class="stats" id="statsB"></div>
-            <label class="checkbox"><input type="checkbox" id="flyB"> Can Fly</label>
-            <h3>Abilities</h3>
-            <textarea id="abilitiesB" spellcheck="false" class="codearea"></textarea>
-            <div class="ability-actions">
-              <button class="small" id="tplB">Insert Template</button>
-              <button class="small" id="validateB">Validate & Load</button>
-            </div>
-            <div class="status" id="statusB"></div>
-          </div>
+        <div>
+          <canvas id="B_px" class="pixel" width="16" height="16" style="width:128px;height:128px"></canvas>
+          <div class="row"><input id="B_color" type="color" value="#ffffff"><button class="btn ghost" id="B_clear">Clear</button></div>
+          <div class="palette" id="B_palette"></div>
+          <small class="footer">16×16 pixel editor. Click to paint. <span class="kbd">Alt</span> pick color, <span class="kbd">Right‑click</span> erase.</small>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
-  <footer>
-    <small>MIT License · Build epic combos, export, share, repeat.</small>
-  </footer>
+  <!-- Ability Code Panels -->
+  <div class="panel small" id="codeA" style="right:16px;top:16px">
+    <div class="title"><span class="dot"></span><strong>Abilities — A</strong></div>
+    <div class="body">
+      <textarea id="codeAText" class="code" spellcheck="false"></textarea>
+      <div class="flex">
+        <button class="btn accent" id="compileA">Compile A</button>
+        <button class="btn ghost" id="tplA">Load Template</button>
+      </div>
+      <div class="sep"></div>
+      <div class="footer">Write JavaScript abilities using the <span class="pill">API</span> described in the template. Multiple abilities returned in an array are supported.</div>
+    </div>
+  </div>
 
-  <script src="js/main.js"></script>
+  <div class="panel small" id="codeB" style="right:16px;top:360px">
+    <div class="title"><span class="dot" style="background:var(--accent2)"></span><strong>Abilities — B</strong></div>
+    <div class="body">
+      <textarea id="codeBText" class="code" spellcheck="false"></textarea>
+      <div class="flex">
+        <button class="btn accent" id="compileB">Compile B</button>
+        <button class="btn ghost" id="tplB">Load Template</button>
+      </div>
+      <div class="sep"></div>
+      <div class="footer">You can define any effects (DoT, immunity, time freeze, knockback, projectiles, buffs).</div>
+    </div>
+  </div>
+
+  <!-- Controls & I/O -->
+  <div class="panel" id="controls" style="left:16px;bottom:16px;top:auto">
+    <div class="title"><span class="dot"></span><strong>Controls, Import/Export & Diagnostics</strong></div>
+    <div class="body">
+      <div class="flex" style="flex-wrap:wrap;gap:10px">
+        <button class="btn accent" id="play">▶ Play</button>
+        <button class="btn" id="pause">⏸ Pause</button>
+        <button class="btn" id="reset">↺ Reset Match</button>
+        <button class="btn" id="exportBtn">⬇ Export</button>
+        <label class="btn" for="importFile">⬆ Import</label>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+        <button class="btn" id="health">🧪 Run Health Check</button>
+        <button class="btn ghost" id="clearLog">Clear Log</button>
+      </div>
+      <div class="sep"></div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <script>
+  // ---------------------------
+  // Utility helpers
+  // ---------------------------
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const rnd=(a,b)=>Math.random()*(b-a)+a;
+  function makeDraggable(panel){
+    const header=panel.querySelector('.title');
+    let ox=0, oy=0, px=0, py=0, dragging=false;
+    header.addEventListener('pointerdown',e=>{dragging=true;header.setPointerCapture(e.pointerId);px=e.clientX;py=e.clientY;const r=panel.getBoundingClientRect();ox=r.left;oy=r.top;});
+    header.addEventListener('pointermove',e=>{ if(!dragging) return; const dx=e.clientX-px, dy=e.clientY-py; panel.style.left= (ox+dx)+"px"; panel.style.top= (oy+dy)+"px"; });
+    header.addEventListener('pointerup',e=>{dragging=false;header.releasePointerCapture(e.pointerId)});
+  }
+  document.querySelectorAll('.panel').forEach(makeDraggable);
+
+  // ---------------------------
+  // Pixel editor (16x16)
+  // ---------------------------
+  class PixelEditor{
+    constructor(canvas,colorInput,clearBtn,paletteEl){
+      this.c=canvas; this.ctx=this.c.getContext('2d'); this.colorInput=colorInput; this.paletteEl=paletteEl;
+      this.px=16; this.py=16; this.data=new Array(256).fill(null);
+      this.draw();
+      this.c.addEventListener('contextmenu',e=>e.preventDefault());
+      this.c.addEventListener('pointerdown',this.onPointer.bind(this));
+      this.c.addEventListener('pointermove',e=>{ if(e.buttons) this.onPointer(e)});
+      clearBtn.addEventListener('click',()=>{this.data.fill(null);this.draw();});
+      // preset palette
+      const swatches=['#ffffff','#000000','#ff3b3b','#ff9b3b','#ffd93b','#6aff3b','#3bffd9','#3b83ff','#a13bff','#ff3bf7','#9c9c9c','#5e6977'];
+      for(const col of swatches){ const d=document.createElement('div'); d.className='sw'; d.style.background=col; d.title=col; d.addEventListener('click',()=>this.colorInput.value=col); this.paletteEl.appendChild(d); }
+    }
+    onPointer(e){
+      const rect=this.c.getBoundingClientRect();
+      const x=Math.floor((e.clientX-rect.left)/rect.width*16);
+      const y=Math.floor((e.clientY-rect.top)/rect.height*16);
+      const idx=y*16+x; if(idx<0||idx>=256) return;
+      if(e.altKey){ // pick
+        const val=this.data[idx]; if(val) this.colorInput.value=val; return;
+      }
+      if(e.buttons===2){ this.data[idx]=null; } else { this.data[idx]=this.colorInput.value; }
+      this.draw();
+    }
+    draw(){
+      this.ctx.clearRect(0,0,16,16);
+      for(let y=0;y<16;y++) for(let x=0;x<16;x++){
+        const col=this.data[y*16+x];
+        if(col){ this.ctx.fillStyle=col; this.ctx.fillRect(x,y,1,1); }
+      }
+    }
+    toArray(){ return [...this.data]; }
+    fromArray(arr){ this.data=arr.slice(0,256); while(this.data.length<256) this.data.push(null); this.draw(); }
+    toImage(size=48){
+      const off=document.createElement('canvas'); off.width=16; off.height=16; const octx=off.getContext('2d');
+      // draw px
+      for(let i=0;i<256;i++){ const col=this.data[i]; if(!col) continue; octx.fillStyle=col; octx.fillRect(i%16,Math.floor(i/16),1,1); }
+      const out=document.createElement('canvas'); out.width=size; out.height=size; const o2=out.getContext('2d');
+      o2.imageSmoothingEnabled=false; o2.drawImage(off,0,0,size,size); return out;
+    }
+  }
+
+  // ---------------------------
+  // Arena, Entities & Combat
+  // ---------------------------
+  const arena=document.getElementById('arena');
+  const ctx=arena.getContext('2d');
+  const W=arena.width, H=arena.height;
+
+  class Status{
+    constructor(){ this.effects=[]; }
+    add(e){ this.effects.push(e); }
+    tick(dt, owner){ this.effects=this.effects.filter(e=>{ e.t-=dt; if(e.t<=0){ e.end&&e.end(owner); return false;} e.tick&&e.tick(dt,owner); return true;}); }
+    has(tag){ return this.effects.some(e=>e.tag===tag); }
+  }
+
+  function resistScale(res){ // simple diminishing returns
+    return 1 - (res/ (100+res));
+  }
+
+  class Character{
+    constructor(name, side, stats, pixelArt){
+      this.name=name; this.side=side; this.base=JSON.parse(JSON.stringify(stats));
+      this.reset(stats,pixelArt);
+    }
+    reset(stats,pixelArt){
+      this.stats=JSON.parse(JSON.stringify(stats));
+      this.size=28; // render size
+      this.x= this.side==='A'? W*0.25 : W*0.75;
+      this.y= H*0.5; this.vx=0; this.vy=0; this.hp=stats.hp; this.dead=false;
+      this.status=new Status();
+      this.abilities=[]; this.cooldowns=[]; this.pixelArt=pixelArt; // 256 array
+    }
+    giveAbilities(list){ this.abilities=list||[]; this.cooldowns=new Array(this.abilities.length).fill(0); }
+    aiRole(){
+      // ranged if any ability has range >= 120 or projectile flag
+      return this.abilities.some(a=> (a.range||0)>=120 || a.tags?.includes('projectile'))? 'ranged':'melee';
+    }
+    update(dt, enemy){
+      if(this.dead) return;
+      // statuses
+      this.status.tick(dt,this);
+      if(this.status.has('frozen')){ // time freeze
+        return; // skip movement & casting
+      }
+      // simple movement AI
+      const dx=enemy.x-this.x, dy=enemy.y-this.y, dist=Math.hypot(dx,dy)||1;
+      const role=this.aiRole();
+      const desired = role==='ranged'? 180 : 28; // maintain distance
+      let accel=0; let ax=0,ay=0; const ms=this.stats.move;
+      if(role==='ranged'){
+        if(dist < desired) { ax = -dx/dist; ay = -dy/dist; accel = 1; }
+        else if(dist>desired+20){ ax = dx/dist; ay = dy/dist; accel = 0.6; } // kite back to range
+      } else {
+        if(dist>desired){ ax = dx/dist; ay = dy/dist; accel = 1; }
+      }
+      const speed = ms * (this.stats.fly?1.05:1.0);
+      this.vx = lerp(this.vx, ax*speed, 0.8*dt);
+      this.vy = lerp(this.vy, ay*speed, 0.8*dt);
+      this.x = clamp(this.x + this.vx*dt, this.size, W-this.size);
+      this.y = clamp(this.y + this.vy*dt, this.size, H-this.size);
+
+      // casting
+      const rateMul = 1 + (this.stats.as/100);
+      for(let i=0;i<this.cooldowns.length;i++){
+        this.cooldowns[i] = Math.max(0, this.cooldowns[i]-dt*rateMul);
+      }
+      // try cast closest ability that satisfies range
+      for(let i=0;i<this.abilities.length;i++){
+        const A = this.abilities[i];
+        if(this.cooldowns[i]>0) continue;
+        const r = A.range||36;
+        if((role==='melee' && dist<=r+4) || (role==='ranged' && dist<=r)){
+          // cast
+          apiRuntime.cast(this, enemy, A);
+          this.cooldowns[i] = Math.max(0.1, A.cooldown||1.0);
+          break;
+        }
+      }
+    }
+    draw(g){
+      // ring
+      g.save(); g.globalAlpha=0.7; g.strokeStyle=this.side==='A'? '#3bf': '#fc6'; g.beginPath(); g.arc(this.x,this.y,this.size*0.9,0,Math.PI*2); g.stroke(); g.restore();
+      // sprite from pixelArt 16x16
+      if(this.pixelArt){
+        const p=Character._tmpCanvas||(Character._tmpCanvas=document.createElement('canvas'));
+        p.width=16; p.height=16; const pctx=p.getContext('2d'); pctx.clearRect(0,0,16,16);
+        for(let i=0;i<256;i++){const col=this.pixelArt[i]; if(!col) continue; pctx.fillStyle=col; pctx.fillRect(i%16,Math.floor(i/16),1,1);}        
+        g.imageSmoothingEnabled=false; g.drawImage(p,this.x-this.size*0.5,this.y-this.size*0.5,this.size,this.size);
+      } else {
+        g.fillStyle='#888'; g.fillRect(this.x-10,this.y-10,20,20);
+      }
+      // hp bar
+      const bw=64,bh=6; g.fillStyle='#17202b'; g.fillRect(this.x-bw/2,this.y-this.size, bw,bh);
+      g.fillStyle=this.side==='A'? '#5df': '#fd7';
+      g.fillRect(this.x-bw/2,this.y-this.size, bw*clamp(this.hp/Math.max(1,this.base.hp),0,1),bh);
+    }
+  }
+
+  // Projectiles & visual effects
+  const projectiles=[]; const effects=[];
+
+  function drawEffects(dt){
+    for(let i=effects.length-1;i>=0;i--){ const e=effects[i]; e.t-=dt; e.tick&&e.tick(dt); if(e.t<=0){ effects.splice(i,1);} }
+  }
+  function updateProjectiles(dt){
+    for(let i=projectiles.length-1;i>=0;i--){
+      const p=projectiles[i]; p.life-=dt; if(p.life<=0){ projectiles.splice(i,1); continue; }
+      p.x+=p.vx*dt; p.y+=p.vy*dt;
+      // bounds
+      if(p.x<0||p.x>W||p.y<0||p.y>H){ projectiles.splice(i,1); continue; }
+      // homing
+      if(p.homing){ const t=p.team==='A'? game.B: game.A; const dx=t.x-p.x, dy=t.y-p.y, d=Math.hypot(dx,dy)||1; const speed=Math.hypot(p.vx,p.vy); p.vx=lerp(p.vx, (dx/d)*speed, dt*2); p.vy=lerp(p.vy, (dy/d)*speed, dt*2); }
+      // collide
+      const target = p.team==='A'? game.B : game.A;
+      const dist = Math.hypot(target.x-p.x, target.y-p.y);
+      if(dist <= (p.radius + target.size*0.4)){
+        if(p.onHit) p.onHit(target,apiRuntime.make(p.team==='A'? game.A:game.B, target));
+        projectiles.splice(i,1);
+      }
+    }
+  }
+  function drawProjectiles(g){
+    for(const p of projectiles){
+      if(p.appearance){ try{ p.appearance(g,p);}catch(e){} }
+      else{ g.fillStyle=p.color||'#fff'; g.beginPath(); g.arc(p.x,p.y,p.radius||4,0,Math.PI*2); g.fill(); }
+    }
+  }
+
+  // ---------------------------
+  // Ability API (runtime)
+  // ---------------------------
+  const apiRuntime={
+    make(self, enemy){
+      return {
+        self, enemy,
+        directionToEnemy(){ const dx=this.enemy.x-this.self.x, dy=this.enemy.y-this.self.y; const d=Math.hypot(dx,dy)||1; return {x:dx/d,y:dy/d}; },
+        damage(target, {physical=0, magical=0}={}){
+          if(target.status.has('immune-physical')) physical=0;
+          if(target.status.has('immune-magical')) magical=0;
+          const pd = physical * resistScale(target.stats.pRes);
+          const md = magical * resistScale(target.stats.mRes);
+          const total = Math.max(0, pd + md);
+          target.hp -= total; if(target.hp<=0){ target.dead=true; }
+          log(`▶ ${this.self.name} dealt ${total.toFixed(1)} dmg to ${target.name} (P:${pd.toFixed(1)} M:${md.toFixed(1)})`);
+          return total;
+        },
+        knockback(target, {power=120, direction=null}={}){
+          const dir = direction || {x:Math.sign(target.x-this.self.x)||1, y:Math.sign(target.y-this.self.y)||0};
+          target.vx += dir.x*power; target.vy += dir.y*power;
+        },
+        applyStatus(target, status){ target.status.add(status); },
+        spawnProjectile({speed=200, radius=4, color='#fff', life=3, team=this.self.side, homing=false, appearance=null, onHit=null}={}){
+          const dir=this.directionToEnemy();
+          const p={x:this.self.x, y:this.self.y, vx:dir.x*speed, vy:dir.y*speed, radius, color, life, team, homing, onHit, appearance};
+          projectiles.push(p); return p;
+        },
+        playEffect({t=0.3, tick=null}={}){ effects.push({t, tick}); },
+        status: {
+          dot: ({physical=0, magical=0, duration=3, every=0.5}={})=>({tag:'dot', t:duration, acc:0, tick(dt,owner){ this.acc+=dt; if(this.acc>=every){ this.acc=0; apiRuntime.make(owner, owner).damage(owner===game.A?game.B:game.A, {physical,magical}); } }}),
+          immunity: ({type='both', duration=2}={})=>({tag:type==='physical'?'immune-physical':type==='magical'?'immune-magical':'immune-both', t:duration, end(o){}}),
+          timeFreeze: ({duration=1.2}={})=>({tag:'frozen', t:duration}),
+          buff: ({stat='pAtk', amount=10, duration=5}={})=>({tag:'buff-'+stat, t:duration, start(o){o.stats[stat]+=amount}, end(o){o.stats[stat]-=amount}}),
+        },
+      };
+    },
+    cast(self, enemy, ability){
+      try{
+        const api=this.make(self,enemy);
+        ability.onCast && ability.onCast(api);
+        log(`⚡ ${self.name} cast ${ability.name||'Ability'} [${ability.type||'unknown'}]`);
+      }catch(e){ log('Ability error: '+e.message); }
+    }
+  };
+
+  // ---------------------------
+  // Game state & loop
+  // ---------------------------
+  const game={ running:false, A:null, B:null, last:0 };
+
+  function resetMatch(){
+    const Astats=readStats('A'); const Bstats=readStats('B');
+    game.A=new Character('A','A',Astats, AEditor.toArray());
+    game.B=new Character('B','B',Bstats, BEditor.toArray());
+    game.A.giveAbilities(compileFromText(document.getElementById('codeAText').value,'A'));
+    game.B.giveAbilities(compileFromText(document.getElementById('codeBText').value,'B'));
+    game.running=false; game.last=performance.now();
+    draw(0);
+  }
+
+  function drawBackground(g){
+    // simple arena grid
+    g.fillStyle='#0b0f14'; g.fillRect(0,0,W,H);
+    g.strokeStyle='#18202c'; g.lineWidth=1; g.beginPath();
+    for(let x=0;x<=W;x+=32){ g.moveTo(x,0); g.lineTo(x,H);} for(let y=0;y<=H;y+=32){ g.moveTo(0,y); g.lineTo(W,y);} g.stroke();
+    // center line
+    g.strokeStyle='#233142'; g.beginPath(); g.moveTo(W/2,0); g.lineTo(W/2,H); g.stroke();
+  }
+
+  function draw(dt){
+    drawBackground(ctx);
+    updateProjectiles(dt);
+    drawProjectiles(ctx);
+    if(game.A) game.A.draw(ctx);
+    if(game.B) game.B.draw(ctx);
+    // Winner
+    if(game.A?.dead || game.B?.dead){
+      ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff'; ctx.font='bold 28px system-ui';
+      const txt = game.A.dead && game.B.dead ? 'Draw!' : (game.A.dead? 'B wins!' : 'A wins!');
+      ctx.fillText(txt,W/2-ctx.measureText(txt).width/2,H/2);
+      game.running=false;
+    }
+  }
+
+  function step(ts){
+    const dt=Math.min(0.033,(ts-game.last)/1000); game.last=ts;
+    if(game.running){
+      if(game.A && game.B && !game.A.dead && !game.B.dead){
+        game.A.update(dt, game.B); game.B.update(dt, game.A);
+      }
+      draw(dt);
+    } else { draw(0); }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(ts=>{ game.last=ts; requestAnimationFrame(step); });
+
+  // ---------------------------
+  // Ability compilation (safe-ish)
+  // ---------------------------
+  const TPL = `// Ability Script Template (JavaScript)
+// You must RETURN an array of ability objects. Define as many as you want.
+// Each ability supports the following fields:
+// {
+//   name: 'Fireball',
+//   type: 'physical' | 'magical' | 'both' | 'status',
+//   cooldown: 1.5,          // seconds between casts (affected by Attacking speed)
+//   range: 160,             // distance in px for AI (melee ~36)
+//   tags: ['projectile'],   // optional AI hints
+//   appearance: (g,p) => {  // optional custom draw for projectiles/effects
+//      g.fillStyle = '#ff6'; g.beginPath(); g.arc(p.x,p.y,p.radius,0,Math.PI*2); g.fill();
+//   },
+//   onCast: (api) => {      // REQUIRED: what happens when the ability is used
+//      // Examples of the sandboxed API:
+//      // 1) Direct damage factoring resistances
+//      // api.damage(api.enemy, {physical: 12 + api.self.stats.pAtk*0.4});
+//      // api.damage(api.enemy, {magical: 20 + api.self.stats.mAtk*0.5});
+//
+//      // 2) Spawn a projectile
+//      // api.spawnProjectile({ speed: 240, radius: 5, color: '#ff7a3b', life: 2.0, homing: false,
+//      //   onHit: (enemy,api) => {
+//      //      api.damage(enemy, {magical: 18});
+//      //      api.applyStatus(enemy, api.status.dot({magical: 4, duration: 3, every: 0.5}));
+//      //      api.knockback(enemy, {power: 120, direction: api.directionToEnemy()});
+//      //   }
+//      // });
+//
+//      // 3) Apply statuses
+//      // api.applyStatus(api.self, api.status.buff({stat:'pAtk', amount:12, duration:5}));
+//      // api.applyStatus(api.enemy, api.status.timeFreeze({duration:0.6}));
+//      // api.applyStatus(api.self, api.status.immunity({type:'magical', duration:1.5}));
+//   }
+// }
+// IMPORTANT: Always `return [ ...abilities ]` as the last statement.
+
+return [
+  {
+    name:'Quick Jab', type:'physical', cooldown:0.8, range:40,
+    onCast: (api)=>{ api.damage(api.enemy, {physical: 8 + api.self.stats.pAtk*0.35}); }
+  },
+  {
+    name:'Homing Orb', type:'magical', cooldown:1.6, range:180, tags:['projectile'],
+    onCast: (api)=>{
+      api.spawnProjectile({speed:200, radius:4, color:'#6cf', life:3, homing:true,
+        onHit:(enemy,api2)=>{ api2.damage(enemy,{magical: 12 + api2.self.stats.mAtk*0.4}); }
+      });
+    }
+  }
+];`;
+
+  function compileFromText(text, who){
+    try{
+      const fn = new Function('api', text);
+      const api = apiRuntime.make(who==='A'? (game?.A||{stats:{}}):(game?.B||{stats:{}}), who==='A'? (game?.B||{}):(game?.A||{}));
+      const result = fn(api);
+      if(!Array.isArray(result)) throw new Error('Script must return an array of ability objects.');
+      // normalize abilities
+      for(const a of result){ if(typeof a.onCast!=="function") throw new Error('Ability missing onCast'); }
+      log(`Compiled ${result.length} ability(ies) for ${who}.`);
+      return result;
+    } catch(e){ log('Compile error ('+who+'): '+e.message); return []; }
+  }
+
+  // ---------------------------
+  // Stats IO
+  // ---------------------------
+  function readStats(prefix){
+    return {
+      hp: +document.getElementById(prefix+'_hp').value,
+      pAtk: +document.getElementById(prefix+'_pAtk').value,
+      pRes: +document.getElementById(prefix+'_pRes').value,
+      mAtk: +document.getElementById(prefix+'_mAtk').value,
+      mRes: +document.getElementById(prefix+'_mRes').value,
+      move: +document.getElementById(prefix+'_move').value,
+      as: +document.getElementById(prefix+'_as').value,
+      fly: document.getElementById(prefix+'_fly').checked,
+    };
+  }
+
+  // ---------------------------
+  // Export / Import
+  // ---------------------------
+  function exportJSON(){
+    const data={
+      version:'1.0.0',
+      A:{ stats:readStats('A'), art:AEditor.toArray(), code:document.getElementById('codeAText').value },
+      B:{ stats:readStats('B'), art:BEditor.toArray(), code:document.getElementById('codeBText').value },
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='battle-sandbox.json'; a.click(); URL.revokeObjectURL(url);
+  }
+  async function importJSON(file){
+    const txt=await file.text(); const data=JSON.parse(txt);
+    const A=data.A||{}, B=data.B||{};
+    // stats
+    const set=(p,k,v)=>{ const el=document.getElementById(p+'_'+k); if(el.type==='checkbox') el.checked=!!v; else el.value=v; };
+    for(const [k,v] of Object.entries(A.stats||{})) set('A',k,v);
+    for(const [k,v] of Object.entries(B.stats||{})) set('B',k,v);
+    // art & code
+    if(A.art) AEditor.fromArray(A.art);
+    if(B.art) BEditor.fromArray(B.art);
+    if(typeof A.code==='string') document.getElementById('codeAText').value=A.code;
+    if(typeof B.code==='string') document.getElementById('codeBText').value=B.code;
+    resetMatch(); log('Imported preset.');
+  }
+
+  // ---------------------------
+  // Diagnostics / Health check
+  // ---------------------------
+  function healthCheck(){
+    const results=[]; const push=(ok,msg)=>results.push((ok?'✅':'❌')+' '+msg);
+    try{
+      // 1) Export/Import roundtrip
+      const snapshot={ A:{stats:readStats('A'), art:AEditor.toArray(), code:document.getElementById('codeAText').value} };
+      const json=JSON.stringify(snapshot); const parsed=JSON.parse(json);
+      push(parsed.A.stats.hp===snapshot.A.stats.hp,'Export/Import JSON integrity');
+      // 2) Compile abilities
+      const a=compileFromText(document.getElementById('codeAText').value,'A');
+      push(Array.isArray(a) && a.every(x=>typeof x.onCast==='function'),'Ability compilation returns valid list');
+      // 3) Damage & resistance
+      const dummyA=new Character('tA','A',{hp:100,pAtk:50,pRes:20,mAtk:0,mRes:0,move:100,as:0,fly:false},null);
+      const dummyB=new Character('tB','B',{hp:100,pAtk:0,pRes:0,mAtk:50,mRes:20,move:100,as:0,fly:false},null);
+      apiRuntime.make(dummyA,dummyB).damage(dummyB,{physical:50});
+      push(dummyB.hp<100,'Physical damage applies');
+      const hpAfter=dummyB.hp; apiRuntime.make(dummyA,dummyB).damage(dummyB,{magical:50});
+      push(dummyB.hp<hpAfter,'Magical damage applies');
+      // 4) Time freeze prevents movement
+      dummyB.status.add(apiRuntime.make(dummyA,dummyB).status.timeFreeze({duration:0.1}));
+      const y0=dummyB.y; dummyB.update(0.016,dummyA); push(dummyB.y===y0,'Time freeze halts update');
+      // 5) Knockback changes velocity
+      const vy0=dummyB.vy; apiRuntime.make(dummyA,dummyB).knockback(dummyB,{power:50,direction:{x:0,y:-1}});
+      push(dummyB.vy<vy0,'Knockback applies velocity change');
+    } catch(e){ push(false,'Exception in health check: '+e.message); }
+    log('Health Check\n'+results.join('\n'));
+  }
+
+  // ---------------------------
+  // UI wiring
+  // ---------------------------
+  function log(msg){ const L=document.getElementById('log'); L.textContent += (msg+'\n'); L.scrollTop=L.scrollHeight; }
+  document.getElementById('exportBtn').addEventListener('click',exportJSON);
+  document.getElementById('importFile').addEventListener('change',e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); });
+  document.getElementById('play').addEventListener('click',()=>{ game.running=true; log('▶ Play'); });
+  document.getElementById('pause').addEventListener('click',()=>{ game.running=false; log('⏸ Pause'); });
+  document.getElementById('reset').addEventListener('click',()=>{ resetMatch(); log('↺ Reset'); });
+  document.getElementById('clearLog').addEventListener('click',()=>{ document.getElementById('log').textContent=''; });
+  document.getElementById('health').addEventListener('click',healthCheck);
+
+  // Pixel editors
+  const AEditor=new PixelEditor(
+    document.getElementById('A_px'), document.getElementById('A_color'), document.getElementById('A_clear'), document.getElementById('A_palette')
+  );
+  const BEditor=new PixelEditor(
+    document.getElementById('B_px'), document.getElementById('B_color'), document.getElementById('B_clear'), document.getElementById('B_palette')
+  );
+
+  // Templates & initial scripts
+  document.getElementById('tplA').addEventListener('click',()=>{ document.getElementById('codeAText').value=TPL; });
+  document.getElementById('tplB').addEventListener('click',()=>{ document.getElementById('codeBText').value=TPL; });
+  document.getElementById('compileA').addEventListener('click',()=>{ const A=compileFromText(document.getElementById('codeAText').value,'A'); if(game.A) game.A.giveAbilities(A); });
+  document.getElementById('compileB').addEventListener('click',()=>{ const B=compileFromText(document.getElementById('codeBText').value,'B'); if(game.B) game.B.giveAbilities(B); });
+
+  // Boot: preload template, basic pixel samples
+  document.getElementById('codeAText').value=TPL;
+  document.getElementById('codeBText').value=TPL
+    .replace('Quick Jab','Arc Slash')
+    .replace('Homing Orb','Ice Lance')
+    .replace("magical: 12 + api2.self.stats.mAtk*0.4","magical: 10 + api2.self.stats.mAtk*0.35");
+
+  // simple default sprites
+  function fillSample(editor, cols){
+    const arr=new Array(256).fill(null);
+    for(let y=4;y<12;y++) for(let x=6;x<10;x++){ arr[y*16+x]=cols[0]; }
+    for(let x=7;x<9;x++){ arr[3*16+x]=cols[1]; arr[12*16+x]=cols[1]; }
+    editor.fromArray(arr);
+  }
+  fillSample(AEditor,['#5df','#fff']);
+  fillSample(BEditor,['#fd7','#111']);
+
+  resetMatch();
+  </script>
 </body>
 </html>
