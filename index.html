@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Battle Sandbox</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <h1>⚔️ Battle Sandbox</h1>
+    <div class="actions">
+      <button id="exportAll">Export Both</button>
+      <input type="file" id="importAll" accept=".json" style="display:none"/>
+      <button id="importAllBtn">Import</button>
+      <button id="playBtn">▶ Play</button>
+      <button id="pauseBtn" disabled>⏸ Pause</button>
+      <button id="resetBtn">↺ Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="arena" width="980" height="540" aria-label="arena"></canvas>
+
+    <!-- Fighter Panels -->
+    <section class="panel" id="fighterA" style="left:16px;top:92px;">
+      <div class="panel-handle">Fighter A</div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col">
+            <h3>Appearance (16×16)</h3>
+            <div class="sprite-toolbar">
+              <label>Color <input type="color" id="colorA" value="#3aa3ff"/></label>
+              <button class="small" data-tool="eyedropA">Eyedropper</button>
+              <button class="small" data-tool="eraseA">Eraser</button>
+              <button class="small" id="clearA">Clear</button>
+              <button class="small" id="exportA">Export A</button>
+              <input type="file" id="importA" accept=".json" style="display:none"/>
+              <button class="small" id="importABtn">Import A</button>
+            </div>
+            <div class="sprite-grid" id="gridA" aria-label="sprite editor A"></div>
+          </div>
+
+          <div class="col">
+            <h3>Stats</h3>
+            <div class="stats" id="statsA"></div>
+            <label class="checkbox"><input type="checkbox" id="flyA"> Can Fly</label>
+            <h3>Abilities</h3>
+            <textarea id="abilitiesA" spellcheck="false" class="codearea"></textarea>
+            <div class="ability-actions">
+              <button class="small" id="tplA">Insert Template</button>
+              <button class="small" id="validateA">Validate & Load</button>
+            </div>
+            <div class="status" id="statusA"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="fighterB" style="left:16px;top:332px;">
+      <div class="panel-handle">Fighter B</div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col">
+            <h3>Appearance (16×16)</h3>
+            <div class="sprite-toolbar">
+              <label>Color <input type="color" id="colorB" value="#ff3a7a"/></label>
+              <button class="small" data-tool="eyedropB">Eyedropper</button>
+              <button class="small" data-tool="eraseB">Eraser</button>
+              <button class="small" id="clearB">Clear</button>
+              <button class="small" id="exportB">Export B</button>
+              <input type="file" id="importB" accept=".json" style="display:none"/>
+              <button class="small" id="importBBtn">Import B</button>
+            </div>
+            <div class="sprite-grid" id="gridB" aria-label="sprite editor B"></div>
+          </div>
+
+          <div class="col">
+            <h3>Stats</h3>
+            <div class="stats" id="statsB"></div>
+            <label class="checkbox"><input type="checkbox" id="flyB"> Can Fly</label>
+            <h3>Abilities</h3>
+            <textarea id="abilitiesB" spellcheck="false" class="codearea"></textarea>
+            <div class="ability-actions">
+              <button class="small" id="tplB">Insert Template</button>
+              <button class="small" id="validateB">Validate & Load</button>
+            </div>
+            <div class="status" id="statusB"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>MIT License · Build epic combos, export, share, repeat.</small>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
